@@ -1,0 +1,49 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+E	start_localisation.py	/^    E = np.dot(H, P) *  H.T$/;"	v
+EKF	localise_ekf.py	/^class EKF(object):$/;"	c
+MAP	myrobot.py	/^    MAP = np.array([[0.0, 0.0], [1.0, 1.0]])$/;"	v	class:Robot
+MAP_L	start_localisation.py	/^MAP_L = np.array(landmarks, dtype=np.float)$/;"	v
+MAP_SIZE	myrobot.py	/^    MAP_SIZE = 2$/;"	v	class:Robot
+N	start_localisation.py	/^N = 5000$/;"	v
+P	start_localisation.py	/^P = np.diag([5.0, 5.0, 5 * np.pi \/ 180]) ** 2     # state covariance$/;"	v
+Q	start_localisation.py	/^Q = np.diag([0.01, 0.01]) ** 2              # input noise$/;"	v
+R	start_localisation.py	/^R = np.diag([5.0]) ** 2      # measurement noise$/;"	v
+Robot	myrobot.py	/^class Robot(object):$/;"	c
+Sigma	start_localisation.py	/^    Sigma = np.linalg.multi_dot((F_x, Sigma, F_x.T))$/;"	v
+Sigma	start_localisation.py	/^Sigma = np.diag([50, 50, np.pi\/2]) ** 2$/;"	v
+WORLD_SIZE	myrobot.py	/^    WORLD_SIZE = 100$/;"	v	class:Robot
+__init__	localise_ekf.py	/^    def __init__(self, Q, R, P):$/;"	m	class:EKF
+__init__	myrobot.py	/^    def __init__(self, pose):$/;"	m	class:Robot
+__set_map__	myrobot.py	/^    def __set_map__(cls, landmarks):$/;"	m	class:Robot	file:
+ex02_h	ex02_h.m	/^function [y, Y_x] = ex02_h(x) $/;"	f
+f	ex02_h.m	/^function f() $/;"	f
+forward	start_localisation.py	/^        forward = np.random.normal()  + 2$/;"	v
+jacob_easy	jacob_easy.m	/^function jacob_easy() $/;"	f
+landmarks	start_localisation.py	/^landmarks = [[25.0, 30.0], [90.0, 80.0], [10.0, 80.0], [80.0, 10.0]]$/;"	v
+line_particles	start_localisation.py	/^line_particles = []$/;"	v
+line_path	start_localisation.py	/^line_path = []$/;"	v
+motion_update	myrobot.py	/^    def motion_update(self, x, y, phi):$/;"	m	class:Robot
+move	myrobot.py	/^    def move(self, turn, forward):$/;"	m	class:Robot
+myrobot	start_localisation.py	/^myrobot = Robot([50, 50, 0])$/;"	v
+p	start_localisation.py	/^p = []$/;"	v
+p_act	start_localisation.py	/^p_act = []$/;"	v
+p_pred	start_localisation.py	/^p_pred = []$/;"	v
+path_actual	start_localisation.py	/^path_actual = []$/;"	v
+predict	localise_ekf.py	/^    def predict(self, ain):$/;"	m	class:EKF
+predict	myrobot.py	/^    def predict(self, state, cmd):$/;"	m	class:Robot
+q	start_localisation.py	/^q = np.sqrt(np.diag(Q)) \/ 2$/;"	v
+r	start_localisation.py	/^r = np.sqrt(np.diag(R)) \/ 2$/;"	v
+sense	myrobot.py	/^    def sense(self):$/;"	m	class:Robot
+sense_linear	myrobot.py	/^    def sense_linear(self, state):$/;"	m	class:Robot
+set_motion_cmd	myrobot.py	/^    def set_motion_cmd(self, turn, forward):$/;"	m	class:Robot
+set_noise	myrobot.py	/^    def set_noise(self, turn_noise, forward_noise, sense_noise):$/;"	m	class:Robot
+set_simulation_params	localise_ekf.py	/^    def set_simulation_params(self, delta_t):$/;"	m	class:EKF
+turn	start_localisation.py	/^        turn = np.random.normal() * 0.2$/;"	v
+x	start_localisation.py	/^x = np.array([45.0, 48.0, 0.0])   # initial state$/;"	v
+y	start_localisation.py	/^    y = myrobot.sense()$/;"	v
+z	start_localisation.py	/^    z = y - e               # innovation$/;"	v
