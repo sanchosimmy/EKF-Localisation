@@ -23,8 +23,8 @@ fig, ax = plt.subplots(1, 1)
 # ax.set_autoscaley_on(True)
 ax.set_xlabel('X (m)')
 ax.set_ylabel('Y (m)')
-ax.set_xlim([-10, 5])
-ax.set_ylim([-40, 4])
+ax.set_xlim([-100, 20])
+ax.set_ylim([-600, 20])
 
 ax.grid()
 ax.legend()
@@ -77,11 +77,11 @@ for i in range(200):
         turn = np.random.normal() * 0.2
         forward = np.random.normal()  + 2
         # u = [-1*(u[1] + i % 3) / 3 , -1 * (u[0] + i %4) / 4 ]
-    u = [-40 * np.pi * 0.01 * np.cos(2 * np.pi * 0.1 * i * delta_t) ,
-         -40 * np.pi * 0.01 * np.sin(2 * np.pi * 0.1 * i * delta_t)]
-    n = np.random.normal(loc=0, scale=q+0.05, size=2)
+    u = [-500 * np.pi * 0.01 * np.cos(2 * np.pi * 0.1 * i * delta_t),
+         -500 * np.pi * 0.01 * np.sin(2 * np.pi * 0.1 * i * delta_t)]
+    n = np.random.normal(loc=0, scale=q, size=2)
     X, _, _ = myrobot.predict(X, u, n, delta_t)
-    v = np.random.normal(loc=0, scale=r+0.005, size=2)
+    v = np.random.normal(loc=0, scale=r, size=2)
     y, _ = myrobot.sense_linear(X)
     y += v
     # print(Z.shape)
@@ -126,11 +126,11 @@ for i in range(200):
     # ellipse = Ellipse((x[0],x[1]), width=ell_radius_x * 2, height=ell_radius_y * 2, facecolor='none', edgecolor='red')
     # ellipse = Ellipse((0,0), width=ell_radius_x * 2, height=ell_radius_y * 2, facecolor='none', edgecolor='red')
     # scale_x = np.sqrt(Sigma[0, 0])
-    # 
+    #
     # # calculating the stdandarddeviation of y from  the squareroot of the variance
     # # np.sqrt(cov[1, 1])
     # scale_y = np.sqrt(Sigma[1, 1])
-    # mean_x, mean_y = x[0], x[1] 
+    # mean_x, mean_y = x[0], x[1]
     # transf = transforms.Affine2D() \
     #     .rotate_deg(45) \
     #     .scale(scale_x, scale_y)  \
