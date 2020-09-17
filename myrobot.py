@@ -82,7 +82,7 @@ class Robot(object):
 #         print(diff.shape,cur_pose.shape,Robot.MAP_SIZE)
         return np.hypot(diff[:, 0], diff[:, 1]) + np.random.normal(size=Robot.MAP_SIZE) * self.sense_noise
 
-    def predict(self, state, cmd, noise):
+    def predict(self, state, cmd, noise, delta_t):
         """method to perform EKF prediction
 
         :state: Current state of the robot
@@ -91,32 +91,59 @@ class Robot(object):
 
         """
 
-        x, y, phi, trans = state
-        turn, forward = cmd
-        turn_noise, forward_noise = noise
-        phi += turn + turn_noise
-        trans = forward +  forward_noise
-        phi %= np.pi * 2
-        x += np.cos(phi) * trans
-        y += np.sin(phi) * trans
-        next_state = np.array([x, y, phi, trans])
+        # x, y, phi, trans = state
+        # turn, forward = cmd
+        # turn_noise, forward_noise = noise
+        # phi += turn + turn_noise
+        # trans = forward +  forward_noise
+        # phi %= np.pi * 2
+        # x += np.cos(phi) * trans
+        # y += np.sin(phi) * trans
+        # next_state = np.array([x, y, phi, trans])
 
-        f_wrt_x = np.array([[1, 0, -np.sin(phi) * trans, 0],
-                            [0, 1, np.cos(phi) * trans, 0],
+        # f_wrt_x = np.array([[1, 0, -np.sin(phi) * trans, 0],
+        #                     [0, 1, np.cos(phi) * trans, 0],
+        #                     [0, 0, 1, 0],
+        #                     [0, 0, 0, 1]])
+        # f_wrt_n = np.array([[0, 0],
+        #                     [0, 0],
+        #                     [1, 0],
+        #                     [0, 1]])
+        # return [next_state, f_wrt_x, f_wrt_n]
+        px, py, vx, vy = state
+        ax, ay = cmd
+        nx, ny = noise
+        px += vx * delta_t
+        py += vy * delta_t
+        vx += ax * delta_t + nx
+        vy += ay * delta_t + ny
+
+        next_state = np.array([px, py, vx, vy])
+
+        f_wrt_x = np.array([[1, 0, delta_t, 0],
+                            [0, 1, 0, delta_t],
                             [0, 0, 1, 0],
                             [0, 0, 0, 1]])
+
         f_wrt_n = np.array([[0, 0],
                             [0, 0],
                             [1, 0],
                             [0, 1]])
+
         return [next_state, f_wrt_x, f_wrt_n]
 
-    def sense_linear(self, state, noise):
+
+    def sense_linear(self, state):
         """method to sense and linearise
         :state: state of the robot
         :returns: [range, Jac of H wrt to x]"""
-        cur_pose = np.array(state[:2], dtype=np.float).reshape(1, 2)
-        diff = Robot.MAP - cur_pose
-        ranges = np.hypot(diff[:, 0], diff[:, 1]) + noise
-        h_wrt_x = np.array([diff[:, 0] / ranges,  - diff[:, 1] /ranges, np.zeros(Robot.MAP_SIZE), np.zeros(Robot.MAP_SIZE)]).T
-        return [ranges, h_wrt_x]
+        # cur_pose = np.array(state[:2], dtype=np.float).reshape(1, 2)
+        # diff = Robot.MAP - cur_pose
+        # ranges = np.hypot(diff[:, 0], diff[:, 1]) + noise
+        y = np.array([np.hypot(state[0], state[1]), np.arctan2(state[1], state[2])])
+        # h_wrt_x = np.array([state[0] / y[0],  state[1] /y[0], np.zeros(Robot.MAP_SIZE), np.zeros(Robot.MAP_SIZE)]).T
+        px, py, _, _ = state
+        t = (py/px) ** 2 + 1
+        h_wrt_x = np.array([[px / y[0], py /y[0], 0, 0],
+                            [-py / ((px **2) * t), 1/(px * t), 0, 0]])
+        return [y, h_wrt_x]

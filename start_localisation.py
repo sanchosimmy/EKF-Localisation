@@ -23,8 +23,8 @@ fig, ax = plt.subplots(1, 1)
 # ax.set_autoscaley_on(True)
 ax.set_xlabel('X (m)')
 ax.set_ylabel('Y (m)')
-ax.set_xlim([-200, 1200])
-ax.set_ylim([-200, 800])
+ax.set_xlim([-10, 5])
+ax.set_ylim([-40, 4])
 
 ax.grid()
 ax.legend()
@@ -38,74 +38,75 @@ line_true, = ax.plot([], [], 'r.', label="waypoint", ms=5)
 line_particles, = ax.plot([], [], 'g.', label="particles", ms=5)
 MAP_L = np.array(landmarks, dtype=np.float)
 ax.scatter(MAP_L[:, 0], MAP_L[:, 1], c='k', marker='*', label="landmarks")
-p = []
-N = 5000
 
 
+dt = 0.1
 
-X = np.array([50.0, 50.0, 0.0, 0])   # initial state
-myrobot = Robot([50, 50, 0])
+Q = np.diag([0.01, 0.01]) ** 2              # input noise
+R = np.diag([0.1, np.pi/180]) ** 2      # measurement noise
+
+X = np.array([2, 1, 0, 0])   # initial state
+myrobot = Robot([2, 1, -1])
 Robot.__set_map__(landmarks)
-myrobot.set_noise(0.01, 0.5, 5)
+# myrobot.set_noise(0.01, 0.5, 5)
 
-Q = np.diag([0.01, 0.5]) ** 2              # input noise
-R = np.diag([5.0]) ** 2      # measurement noise
 
 # estimated variables
-x = np.array([50.0, 50.0, 0.0, 0])   # initial state
-P = np.diag([0.5, 0.5, 0.01]) ** 2     # state covariance
+x = np.array([3, 3, 1, 0])   # initial state
+P = np.diag([1, 2, 1, 1]) ** 2     # state covariance
 # T = np.diag([100,5,100])
 # T = np.array([[100, 20, 0],[80, 100, 0],[0, 0, 0]])
 # perturbation levels
 
 q = np.sqrt(np.diag(Q)) / 2
 r = np.sqrt(np.diag(R)) / 2
-Sigma = np.diag([50, 50, np.pi * 2, 0.1]) ** 2
+delta_t = 0.1
 p_x = list("")
 p_y = list("")
 p_x.append(x[0])
 p_y.append(x[1])
 pt_x = list("")
 pt_y = list("")
-pt_x.append(x[0])
-pt_y.append(x[1])
+pt_x.append(X[0])
+pt_y.append(X[1])
+u = [0, 0]
 
-for i in range(50):
+for i in range(200):
 
     if(i % 50 == 0):
         turn = np.random.normal() * 0.2
         forward = np.random.normal()  + 2
-        turn, forward = 0.0, 2
-    noise = [np.random.normal(0, q[0]), np.random.normal(0, q[1])]
-    X, _, _ = myrobot.predict(X, [turn, forward], noise)
-    y, _ = myrobot.sense_linear(X, np.random.normal(0, r, 4))
+        # u = [-1*(u[1] + i % 3) / 3 , -1 * (u[0] + i %4) / 4 ]
+    u = [-40 * np.pi * 0.01 * np.cos(2 * np.pi * 0.1 * i * delta_t) ,
+         -40 * np.pi * 0.01 * np.sin(2 * np.pi * 0.1 * i * delta_t)]
+    n = np.random.normal(loc=0, scale=q+0.05, size=2)
+    X, _, _ = myrobot.predict(X, u, n, delta_t)
+    v = np.random.normal(loc=0, scale=r+0.005, size=2)
+    y, _ = myrobot.sense_linear(X)
+    y += v
     # print(Z.shape)
 
     # estimate prediction
     # print('x : {} shape: {} y : {} shape : {}'.format(x, x.shape, y, y.shape))
-    x, F_x, F_n = myrobot.predict(x, [turn, forward], [0, 0])
-    Sigma = np.linalg.multi_dot((F_x, Sigma, F_x.T)) + \
+    x, F_x, F_n = myrobot.predict(x, u, [0, 0], delta_t)
+    P = np.linalg.multi_dot((F_x, P, F_x.T)) + \
             np.linalg.multi_dot((F_n, Q, F_n.T))
 
     # correction step
-    e, H = myrobot.sense_linear(x, [0,0,0,0])
+    e, H = myrobot.sense_linear(x)
+    E = np.linalg.multi_dot((H, P, H.T))
 
     z = y - e               # innovations
-    x_adv = np.array(x)
-    P_adv = np.zeros(16, dtype=np.float).reshape(4, 4)
-    for j, Hi in enumerate(H):
-        E = np.linalg.multi_dot((Hi, Sigma, Hi.T))
-        Z = E + R
-        K = np.dot(Sigma, Hi.T) / Z
-        # print('x_adv : {}, K : {}, Padv : {} shape : {}'.format(x_adv.shape, K.shape, P_adv.shape, z[j].shape))
-        x_adv += K.reshape(4) * z[j]
-        P_adv += np.dot(K, Hi)
-        #pdb.set_trace()
+    Z = E + R
+    # for j, Hi in enumerate(H):
+    K = np.linalg.multi_dot((P, H.T, np.linalg.inv(Z)))
+     # print('x_adv : {}, K : {}, Padv : {} shape : {}'.format(x_adv.shape, K.shape, P_adv.shape, z[j].shape))
+    x += np.dot(K, z)
+    P -= np.linalg.multi_dot((K, H, P))
+    #pdb.set_trace()
 
     #pdb.set_trace()
-    x = np.array(x_adv)
-    print(x)
-    Sigma = np.dot((np.eye(4) - P_adv), Sigma)
+    # print(x)
     # print('z:{}, H: {}, y: {}, e: {} E: {}'.format(z.shape, H.shape, y.shape, e.shape, E.shape))
     # line_particles.set_data([K[0], 5])
     # print(x - myrobot.pose)
