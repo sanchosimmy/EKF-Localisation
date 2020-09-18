@@ -23,8 +23,8 @@ fig, ax = plt.subplots(1, 1)
 # ax.set_autoscaley_on(True)
 ax.set_xlabel('X (m)')
 ax.set_ylabel('Y (m)')
-ax.set_xlim([-100, 20])
-ax.set_ylim([-600, 20])
+ax.set_xlim([-400, 400])
+ax.set_ylim([-400, 400])
 
 ax.grid()
 ax.legend()
@@ -42,18 +42,19 @@ ax.scatter(MAP_L[:, 0], MAP_L[:, 1], c='k', marker='*', label="landmarks")
 
 dt = 0.1
 
-Q = np.diag([0.01, 0.01]) ** 2              # input noise
+Q = np.diag([0.01, 0.5]) ** 2              # input noise
+
 R = np.diag([0.1, np.pi/180]) ** 2      # measurement noise
 
 X = np.array([2, 1, 0, 0])   # initial state
-myrobot = Robot([2, 1, -1])
+myrobot = Robot([2, 1, 0])
 Robot.__set_map__(landmarks)
 # myrobot.set_noise(0.01, 0.5, 5)
 
 
 # estimated variables
-x = np.array([3, 3, 1, 0])   # initial state
-P = np.diag([1, 2, 1, 1]) ** 2     # state covariance
+x = np.array([3, 3, 0.8 * np.pi/180, 0])   # initial state
+P = np.diag([1, 2, np.pi/180, 1]) ** 2     # state covariance
 # T = np.diag([100,5,100])
 # T = np.array([[100, 20, 0],[80, 100, 0],[0, 0, 0]])
 # perturbation levels
@@ -74,11 +75,12 @@ u = [0, 0]
 for i in range(200):
 
     if(i % 50 == 0):
-        turn = np.random.normal() * 0.2
-        forward = np.random.normal()  + 2
+        turn = np.random.normal() * 0.05
+        forward = np.random.normal() * 3.5 + 1
         # u = [-1*(u[1] + i % 3) / 3 , -1 * (u[0] + i %4) / 4 ]
-    u = [-500 * np.pi * 0.01 * np.cos(2 * np.pi * 0.1 * i * delta_t),
-         -500 * np.pi * 0.01 * np.sin(2 * np.pi * 0.1 * i * delta_t)]
+        u = [turn, forward]
+    #u = [-500 * np.pi * 0.01 * np.cos(2 * np.pi * 0.1 * i * delta_t),
+    #     -500 * np.pi * 0.01 * np.sin(2 * np.pi * 0.1 * i * delta_t)]
     n = np.random.normal(loc=0, scale=q, size=2)
     X, _, _ = myrobot.predict(X, u, n, delta_t)
     v = np.random.normal(loc=0, scale=r, size=2)
@@ -120,24 +122,25 @@ for i in range(200):
     pt_y.append(X[1])
     line_true.set_data(pt_x, pt_y)
 
-    # pearson = T[0, 1]/np.sqrt(T[0, 0] * T[1, 1])
-    # ell_radius_x = np.sqrt(1 + pearson)
-    # ell_radius_y = np.sqrt(1 - pearson)
-    # ellipse = Ellipse((x[0],x[1]), width=ell_radius_x * 2, height=ell_radius_y * 2, facecolor='none', edgecolor='red')
-    # ellipse = Ellipse((0,0), width=ell_radius_x * 2, height=ell_radius_y * 2, facecolor='none', edgecolor='red')
-    # scale_x = np.sqrt(Sigma[0, 0])
-    #
-    # # calculating the stdandarddeviation of y from  the squareroot of the variance
-    # # np.sqrt(cov[1, 1])
-    # scale_y = np.sqrt(Sigma[1, 1])
-    # mean_x, mean_y = x[0], x[1]
-    # transf = transforms.Affine2D() \
-    #     .rotate_deg(45) \
-    #     .scale(scale_x, scale_y)  \
-    #     .translate(mean_x, mean_y)
-    # ellipse.set_transform(transf + ax.transData)
-    # ax.add_patch(ellipse)
-
+# -----------------------cov ellipse-------------------#
+#    pearson = P[0, 1]/np.sqrt(P[0, 0] * P[1, 1])
+#    ell_radius_x = np.sqrt(1 + pearson)
+#    ell_radius_y = np.sqrt(1 - pearson)
+#    # ellipse = Ellipse((x[0],x[1]), width=ell_radius_x * 2, height=ell_radius_y * 2, facecolor='none', edgecolor='red')
+#    ellipse = Ellipse((0,0), width=ell_radius_x * 2, height=ell_radius_y  *2, facecolor='none', edgecolor='red')
+#    scale_x = np.sqrt(P[0, 0]) * 40 
+#    
+#    # calculating the stdandarddeviation of y from  the squareroot of the variance
+#    # np.sqrt(cov[1, 1])
+#    scale_y = np.sqrt(P[1, 1]) * 40
+#    mean_x, mean_y = x[0], x[1]
+#    transf = transforms.Affine2D() \
+#        .rotate_deg(45) \
+#        .scale(scale_x, scale_y)  \
+#        .translate(mean_x, mean_y)
+#    ellipse.set_transform(transf + ax.transData)
+#    ax.add_patch(ellipse)
+# ----------------------------------cov ellipse ends-----#
 
     # print(my_pf.particles.shape,'test')
     fig.canvas.draw()

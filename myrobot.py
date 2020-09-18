@@ -91,46 +91,48 @@ class Robot(object):
 
         """
 
-        # x, y, phi, trans = state
-        # turn, forward = cmd
-        # turn_noise, forward_noise = noise
-        # phi += turn + turn_noise
-        # trans = forward +  forward_noise
-        # phi %= np.pi * 2
-        # x += np.cos(phi) * trans
-        # y += np.sin(phi) * trans
-        # next_state = np.array([x, y, phi, trans])
+        x, y, phi, trans = state
+        turn, forward = cmd
+        turn_noise, forward_noise = noise
+        phi += turn + turn_noise
+        trans = forward +  forward_noise
+        phi = (phi + np.pi) % (np.pi * 2) - np.pi
+        x += np.cos(phi) * trans
+        y += np.sin(phi) * trans
+        next_state = np.array([x, y, phi, trans])
 
-        # f_wrt_x = np.array([[1, 0, -np.sin(phi) * trans, 0],
-        #                     [0, 1, np.cos(phi) * trans, 0],
-        #                     [0, 0, 1, 0],
-        #                     [0, 0, 0, 1]])
-        # f_wrt_n = np.array([[0, 0],
-        #                     [0, 0],
-        #                     [1, 0],
-        #                     [0, 1]])
-        # return [next_state, f_wrt_x, f_wrt_n]
-        px, py, vx, vy = state
-        ax, ay = cmd
-        nx, ny = noise
-        px += vx * delta_t
-        py += vy * delta_t
-        vx += ax * delta_t + nx
-        vy += ay * delta_t + ny
-
-        next_state = np.array([px, py, vx, vy])
-
-        f_wrt_x = np.array([[1, 0, delta_t, 0],
-                            [0, 1, 0, delta_t],
+        f_wrt_x = np.array([[1, 0, -np.sin(phi) * trans, 0],
+                            [0, 1, np.cos(phi) * trans, 0],
                             [0, 0, 1, 0],
-                            [0, 0, 0, 1]])
-
+                            [0, 0, 0, 0]])
         f_wrt_n = np.array([[0, 0],
                             [0, 0],
                             [1, 0],
                             [0, 1]])
-
         return [next_state, f_wrt_x, f_wrt_n]
+        
+# -----------jsola model--------------# 
+        # px, py, vx, vy = state
+        # ax, ay = cmd
+        # nx, ny = noise
+        # px += vx * delta_t
+        # py += vy * delta_t
+        # vx += ax * delta_t + nx
+        # vy += ay * delta_t + ny
+
+        # next_state = np.array([px, py, vx, vy])
+
+        # f_wrt_x = np.array([[1, 0, delta_t, 0],
+        #                     [0, 1, 0, delta_t],
+        #                     [0, 0, 1, 0],
+        #                     [0, 0, 0, 1]])
+
+        # f_wrt_n = np.array([[0, 0],
+        #                     [0, 0],
+        #                     [1, 0],
+        #                     [0, 1]])
+
+        # return [next_state, f_wrt_x, f_wrt_n]
 
 
     def sense_linear(self, state):
