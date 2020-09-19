@@ -104,7 +104,7 @@ class Robot(object):
         f_wrt_x = np.array([[1, 0, -np.sin(phi) * trans, 0],
                             [0, 1, np.cos(phi) * trans, 0],
                             [0, 0, 1, 0],
-                            [0, 0, 0, 0]])
+                            [0, 0, 0, 1]])
         f_wrt_n = np.array([[0, 0],
                             [0, 0],
                             [1, 0],
@@ -149,3 +149,23 @@ class Robot(object):
         h_wrt_x = np.array([[px / y[0], py /y[0], 0, 0],
                             [-py / ((px **2) * t), 1/(px * t), 0, 0]])
         return [y, h_wrt_x]
+
+    def obs(self, state):
+        """TODO: Docstring for obs.
+
+        :state: robot state
+        :returns: [measurement_estimate, measurement_jacobian]
+
+        """
+        pass
+
+    def advance(self, state, cmd, delta_t, noise):
+        """method to advance the robot with given commands
+
+        :state: state mean
+        :cmd: input [linear_vel, ang_vel]
+        :delta_t: time interval
+        :noise: additive noise
+        :returns: [next_state, jac_wrt_x]
+
+        """
