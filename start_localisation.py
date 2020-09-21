@@ -45,7 +45,7 @@ from myrobot import Robot
 # from localise_ekf import EKF
 
 # pylint:disable-msg=C0103
-landmarks = [[25.0, 30.0], [90.0, 80.0], [10.0, 80.0], [80.0, 10.0]]
+landmarks = [[25.0, 30.0], [90.0, 80.0], [10.0, 80.0], [80.0, 10.0], [-50., -50.],[-50., 50.], [50, -50], [-10, -20], [10, -20], [20, -10]]
 
 p_pred = []
 path_actual = []
@@ -85,8 +85,8 @@ Robot.__set_map__(landmarks)
 x = np.array([30, 8, np.deg2rad(0.8), 0])   # initial state
 Sigma = np.eye(4, dtype=np.float)   * 40                       # intial cov
 
-q = np.sqrt(np.diag(Q)) / 2
-r = np.sqrt(np.diag(R)) / 2
+q = np.sqrt(np.diag(Q)) / 2 * 4
+r = np.sqrt(np.diag(R)) / 2 * 2
 delta_t = 0.1
 p_x = list("")
 p_y = list("")
@@ -164,14 +164,31 @@ def observation_model(state):
 
     """
     x, y, _, _ = state
-    z = [np.hypot(x, y), np.arctan2(y, x)]
-    t = (y/x) ** 2 + 1
-    h_wrt_x = np.array([[x / z[0], y /z[0], 0, 0],
-                        [-y / ((x **2) * t), 1/(x * t), 0, 0]])
-    return [z, h_wrt_x]
+    diff = np.array([x,y]) - MAP_L
+    z = np.hstack((np.hypot(diff[:, 0], diff[:, 1]), np.arctan2(diff[:, 1], diff[:, 0]))).reshape(-1, len(MAP_L)).T
+    index = np.argwhere(z[:,0] < 80).flatten()
+    # print(index)
+    return z, index
 
+def jac_h_x(state, index):
+    """returns jacobian of observation function w.r.to x
 
-def ekf_pr(x, Sigma, u, z, delta_t):
+    :state: state_predicton \mu_{t}
+    :z: measurement [range, bearing]
+    :returns: J(h)_{x}|_{t}
+
+    """
+    x, y, _, _ = state
+    diff = np.array([x,y]) - MAP_L
+    z = np.hypot(diff[:, 0], diff[:, 1])
+    H = list('')
+    for i, _ in enumerate(z):
+        Hi = np.array([[diff[i, 0] / z[i], diff[i, 1] / z[i], 0, 0],
+                          [-diff[i,1] / z[i] **2, diff[i, 0] / z[i] ** 2, 0, 0]], dtype=np.float)
+        H.append(Hi)
+    return H
+
+def ekf_pr(x, Sigma, u, z, delta_t, index):
     """Main EKF method
 
     :x: state vector [x, y, yaw, v]
@@ -187,12 +204,18 @@ def ekf_pr(x, Sigma, u, z, delta_t):
     Sigma = np.linalg.multi_dot((G, Sigma, G.T)) + R
 
     # measurement prediction
-    zPred, H = observation_model(x)
-    y = z - zPred                                   # innovation
-    S = np.linalg.multi_dot((H, Sigma, H.T))  + Q
-    K = np.linalg.multi_dot((Sigma, H.T, np.linalg.inv(S)))
-    x += np.dot(K, y)
-    Sigma  = (np.eye(len(x)) - np.dot(K,H)) @ Sigma
+    zPred, _ = observation_model(x)
+    H = jac_h_x(x, index)
+    # innovation
+    y = z - zPred                                   
+    Sigma_ad = np.zeros(Sigma.shape)
+    for i in index:
+        # print(i, index)
+        S = np.linalg.multi_dot((H[i], Sigma, H[i].T))  + Q
+        K = np.linalg.multi_dot((Sigma, H[i].T, np.linalg.inv(S)))
+        x += np.dot(K, y[i]) / len(index)
+        Sigma_ad  += np.dot(K,H[i]) / len(index)
+    Sigma  =  (np.eye(len(Sigma)) - Sigma_ad) @ Sigma
     return x, Sigma
 
 
@@ -217,9 +240,7 @@ def ekf_est(x, P, u, y, delta_t):
 
     z = y - e               # innovations
     Z = E + R
-    # for j, Hi in enumerate(H):
     K = np.linalg.multi_dot((P, H.T, np.linalg.inv(Z)))
-     # print('x_adv : {}, K : {}, Padv : {} shape : {}'.format(x_adv.shape, K.shape, P_adv.shape, z[j].shape))
     x += np.dot(K, z)
     P -= np.linalg.multi_dot((K, H, P))
     return [x, P]
@@ -231,32 +252,15 @@ for i in range(500):
         yaw_rate = np.random.normal() * 0.5 + 0.2
         v = np.random.normal() * 2 + 5
         u = np.array([v, yaw_rate])
-    #u = [-500 * np.pi * 0.01 * np.cos(2 * np.pi * 0.1 * i * delta_t),
-    #     -500 * np.pi * 0.01 * np.sin(2 * np.pi * 0.1 * i * delta_t)]
     n = np.random.normal(loc=0, scale=q, size=2)
-    # X, _, _ = myrobot.predict(X, u, n, delta_t)
-    # y, _ = myrobot.sense_linear(X)
     X, _ = motion_model(X, u, delta_t)
-    z, _ = observation_model(X)
-    z += np.random.randn(2) * q
+    z, index = observation_model(X)
+    z += np.random.randn(len(z), 2) * q
     ud = u + np.random.randn(2) * INPUT_NOISE  
 
     
-    x, Sigma = ekf_pr(x, Sigma, u, z, delta_t)
+    x, Sigma = ekf_pr(x, Sigma, u, z, delta_t, index)
 
-    # x, P = ekf_correction(x, P, u, y, delta_t)
-    # print(Z.shape)
-
-    # estimate prediction
-    # print('x : {} shape: {} y : {} shape : {}'.format(x, x.shape, y, y.shape))
-        #pdb.set_trace()
-
-    #pdb.set_trace()
-    # print(x)
-    # print('z:{}, H: {}, y: {}, e: {} E: {}'.format(z.shape, H.shape, y.shape, e.shape, E.shape))
-    # line_particles.set_data([K[0], 5])
-    # print(x - myrobot.pose)
-    # print(type(Sigma), Sigma.shape, Sigma)
     # ------------------------------------------------------
     pt_x.append(X[0])
     pt_y.append(X[1])
@@ -271,7 +275,6 @@ for i in range(500):
         pearson = Sigma[0, 1]/np.sqrt(Sigma[0, 0] * Sigma[1, 1])
         ell_radius_x = np.sqrt(1 + pearson)
         ell_radius_y = np.sqrt(1 - pearson)
-        # ellipse = Ellipse((x[0],x[1]), width=ell_radius_x * 2, height=ell_radius_y * 2, facecolor='none', edgecolor='red')
         ellipse = Ellipse((0,0), width=ell_radius_x * 2, height=ell_radius_y  *2, facecolor='none', edgecolor='gray')
         scale_x = np.sqrt(Sigma[0, 0])
         
@@ -287,13 +290,5 @@ for i in range(500):
         ax.add_patch(ellipse)
 # --    --------------------------------cov ellipse ends-----#
 
-        # print(my_pf.particles.shape,'test')
         fig.canvas.draw()
         fig.canvas.flush_events()
-#part = np.array(p_pred, dtype=np.float)
-#print(type(path[0]), path.shape)
-#print(type(part), part.shape, part[0].shape, part[:,1].shape)
-#print(kl)
-## plt.scatter(r[:,0],r[:,1])
-## plt.scatter(t[:,0],t[:,1])
-# print(path_actual,path_pred) #Leave this print statement for grading purposes!
